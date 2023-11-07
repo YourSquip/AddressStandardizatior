@@ -14,7 +14,8 @@ services.AddHttpClient();
 var serviceProvider = services.BuildServiceProvider();
 var httpClientFactory = serviceProvider.GetService<IHttpClientFactory>();
 var httpClient = httpClientFactory?.CreateClient();
-// задаём api dadata
+
+// задаём данные для api dadata
 var token = "927777ed1d86fc93ea4f121c89e662d7174b3d21";
 var secret = "caac29a684135a2279bda141485fc222258a2b8e";
 var api = new CleanClientAsync(token, secret);
@@ -28,24 +29,30 @@ app.Run(async (context) =>
     
     context.Response.ContentType = "text/html; charset=utf-8";
 
-    // если обращение идет по адресу "/postuser", получаем данные формы
-    if (context.Request.Path == "/postaddress")
+    if (context.Request.Path == "/getaddress")
     {
-        var form = context.Request.Form;
-        string address = form["address"];
+        
+        string getSource = "https://localhost:7210";//страница, с которой будет браться сырая запись адреса
+        string address = await httpClient.GetStringAsync(getSource);
+
         var fixedAddress = await api.Clean<Address>(address);//используем dadata, чтобы стандартизировать адрес
         var settings = new JsonSerializerSettings { };
-        string addressJson = JsonConvert.SerializeObject(fixedAddress,settings);
-        //await context.Response.WriteAsJsonAsync($"<div><p>{fixedAddress}</p></div>"); //не вся инфа
-        await context.Response.WriteAsync($"<div><p>{addressJson}</p></div>");
+        string addressJson = JsonConvert.SerializeObject(fixedAddress, settings);
+        await context.Response.WriteAsync($"<div><p>{addressJson}</p></div>"); //получаем json
+
+
+        //JsonContent content = JsonContent.Create(addressJson);
+        //var result = await httpClient.PostAsync("https://localhost:7144/getaddress",content);
+        //JsonContent content = JsonContent.Create(fixedAddress);
+        //using var response = await httpClient.PostAsync("https://localhost:7144/getaddress", content);
+        //Address? address1 = await response.Content.ReadFromJsonAsync<Address>();
+        //Console.WriteLine($"{address1?.city}");
 
     }
     else
     {
         await context.Response.SendFileAsync("html/index.html");
     }
-    //string content = await httpClient.GetStringAsync("https://localhost:7144/postaddress");
-    //Console.WriteLine(content);
 
 });
 
