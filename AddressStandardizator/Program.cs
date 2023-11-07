@@ -8,7 +8,7 @@ var builder = WebApplication.CreateBuilder();
 builder.Services.AddCors(); // добавляем Cors
 var app = builder.Build();
 
-//httpClientFactory
+//создание httpClient через httpClientFactory
 var services = new ServiceCollection();
 services.AddHttpClient();
 var serviceProvider = services.BuildServiceProvider();
@@ -20,9 +20,9 @@ var token = "927777ed1d86fc93ea4f121c89e662d7174b3d21";
 var secret = "caac29a684135a2279bda141485fc222258a2b8e";
 var api = new CleanClientAsync(token, secret);
 
-app.UseHttpLogging(); //включаем базовое логгирование
+app.UseHttpLogging(); //включаем базовое ведение журнала http
 app.UseCors(builder => builder.AllowAnyOrigin()); //задаём политику для Cors 
-app.UseHttpsRedirection();
+app.UseHttpsRedirection(); //подключаем редирект на https
 
 app.Run(async (context) =>
 {
@@ -32,21 +32,32 @@ app.Run(async (context) =>
     if (context.Request.Path == "/getaddress")
     {
         
-        string getSource = "https://localhost:7210";//страница, с которой будет браться сырая запись адреса
-        string address = await httpClient.GetStringAsync(getSource);
+        string getSource = "https://localhost:7210";//сюда идёт url страницы, с которой будет браться сырая запись адреса
+        if(httpClient != null)
+        {
+            string address = await httpClient.GetStringAsync(getSource);
+            if (address != null && address != "")
+            {
+                var fixedAddress = await api.Clean<Address>(address);//используем dadata, чтобы стандартизировать адрес
 
-        var fixedAddress = await api.Clean<Address>(address);//используем dadata, чтобы стандартизировать адрес
-        var settings = new JsonSerializerSettings { };
-        string addressJson = JsonConvert.SerializeObject(fixedAddress, settings);
-        await context.Response.WriteAsync($"<div><p>{addressJson}</p></div>"); //получаем json
+                //конвертируем адрес в json
+                var settings = new JsonSerializerSettings { };
+                string addressJson = JsonConvert.SerializeObject(fixedAddress, settings);
 
+                await context.Response.WriteAsync($"<div><p>{addressJson}</p></div>"); //выводим json
+            }
+            else
+            {
+                app.Logger.LogError("source page is empty");
+            }
+        }
+        else
+        {
+            app.Logger.LogError("httpClient is null");
+        }
+        
+       
 
-        //JsonContent content = JsonContent.Create(addressJson);
-        //var result = await httpClient.PostAsync("https://localhost:7144/getaddress",content);
-        //JsonContent content = JsonContent.Create(fixedAddress);
-        //using var response = await httpClient.PostAsync("https://localhost:7144/getaddress", content);
-        //Address? address1 = await response.Content.ReadFromJsonAsync<Address>();
-        //Console.WriteLine($"{address1?.city}");
 
     }
     else
