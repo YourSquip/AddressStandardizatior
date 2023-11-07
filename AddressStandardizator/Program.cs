@@ -5,24 +5,24 @@ using Newtonsoft.Json;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder();
-builder.Services.AddCors(); // добавляем Cors
+builder.Services.AddCors(); // РґРѕР±Р°РІР»СЏРµРј Cors 
 var app = builder.Build();
 
-//создание httpClient через httpClientFactory
+//СЃРѕР·РґР°РЅРёРµ httpClient С‡РµСЂРµР· httpClientFactory 
 var services = new ServiceCollection();
 services.AddHttpClient();
 var serviceProvider = services.BuildServiceProvider();
 var httpClientFactory = serviceProvider.GetService<IHttpClientFactory>();
 var httpClient = httpClientFactory?.CreateClient();
 
-// задаём данные для api dadata
+// Р·Р°РґР°С‘Рј РґР°РЅРЅС‹Рµ РґР»СЏ api dadata
 var token = "927777ed1d86fc93ea4f121c89e662d7174b3d21";
 var secret = "caac29a684135a2279bda141485fc222258a2b8e";
 var api = new CleanClientAsync(token, secret);
 
-app.UseHttpLogging(); //включаем базовое ведение журнала http
-app.UseCors(builder => builder.AllowAnyOrigin()); //задаём политику для Cors 
-app.UseHttpsRedirection(); //подключаем редирект на https
+app.UseHttpLogging(); //РІРєР»СЋС‡Р°РµРј Р±Р°Р·РѕРІРѕРµ РІРµРґРµРЅРёРµ Р¶СѓСЂРЅР°Р»Р° http
+app.UseCors(builder => builder.AllowAnyOrigin()); //Р·Р°РґР°С‘Рј РїРѕР»РёС‚РёРєСѓ РґР»СЏ Cors 
+app.UseHttpsRedirection(); //РїРѕРґРєР»СЋС‡Р°РµРј СЂРµРґРёСЂРµРєС‚ РЅР° https
 
 app.Run(async (context) =>
 {
@@ -32,19 +32,19 @@ app.Run(async (context) =>
     if (context.Request.Path == "/getaddress")
     {
         
-        string getSource = "https://localhost:7210";//сюда идёт url страницы, с которой будет браться сырая запись адреса
+        string getSource = "https://localhost:7210";//СЃСЋРґР° РёРґС‘С‚ url СЃС‚СЂР°РЅРёС†С‹, СЃ РєРѕС‚РѕСЂРѕР№ Р±СѓРґРµС‚ Р±СЂР°С‚СЊСЃСЏ СЃС‹СЂР°СЏ Р·Р°РїРёСЃСЊ Р°РґСЂРµСЃР°
         if(httpClient != null)
         {
             string address = await httpClient.GetStringAsync(getSource);
             if (address != null && address != "")
             {
-                var fixedAddress = await api.Clean<Address>(address);//используем dadata, чтобы стандартизировать адрес
+                var fixedAddress = await api.Clean<Address>(address);//РёСЃРїРѕР»СЊР·СѓРµРј dadata, С‡С‚РѕР±С‹ СЃС‚Р°РЅРґР°СЂС‚РёР·РёСЂРѕРІР°С‚СЊ Р°РґСЂРµСЃ
 
-                //конвертируем адрес в json
+                //РєРѕРЅРІРµСЂС‚РёСЂСѓРµРј Р°РґСЂРµСЃ РІ json
                 var settings = new JsonSerializerSettings { };
                 string addressJson = JsonConvert.SerializeObject(fixedAddress, settings);
 
-                await context.Response.WriteAsync($"<div><p>{addressJson}</p></div>"); //выводим json
+                await context.Response.WriteAsync($"<div><p>{addressJson}</p></div>"); //РІС‹РІРѕРґРёРј json
             }
             else
             {
